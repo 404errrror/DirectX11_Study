@@ -5,6 +5,8 @@
 
 SystemClass::SystemClass()
 {
+	m_Input = 0;
+	m_Graphics = 0;
 }
 
 
