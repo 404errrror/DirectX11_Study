@@ -20,3 +20,4 @@ using namespace DirectX;
 //////////////////////////
 // warning C4316 Ã³¸®¿ë //
 //////////////////////////
+#include "AlignedAllocationPolicy.h"
