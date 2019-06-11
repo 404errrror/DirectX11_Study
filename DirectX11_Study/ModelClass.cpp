@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "ModelClass.h"
-
+#include "TextureClass.h"
 
 ModelClass::ModelClass()
 {
@@ -18,15 +18,22 @@ ModelClass::~ModelClass()
 
 
 
-bool ModelClass::Initialize(ID3D11Device* device)
+bool ModelClass::Initialize(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const char* textureFilename)
 {
 	// 정점 및 인덱스 버퍼를 초기화합니다.
-	return InitializeBuffers(device);
+	if (!InitializeBuffers(device))
+		return false;
+
+	// 이 모델의 텍스처를 로드합니다.
+	return LoadTexture(device, deviceContext, textureFilename);
 }
 
 
 void ModelClass::Shutdown()
 {
+	// 버텍스 및 인덱스 버퍼를 종료합니다.
+	ShutdownBuffers();
+
 	// 버텍스 및 인덱스 버퍼를 종료합니다.
 	ShutdownBuffers();
 }
@@ -42,6 +49,12 @@ void ModelClass::Render(ID3D11DeviceContext* deviceContext)
 int ModelClass::GetIndexCount()
 {
 	return m_indexCount;
+}
+
+
+ID3D11ShaderResourceView* ModelClass::GetTexture()
+{
+	return m_Texture->GetTexture();
 }
 
 
@@ -66,13 +79,13 @@ bool ModelClass::InitializeBuffers(ID3D11Device* device)
 	// 정점 배열에 데이터를 설정합니다.
 	// 정점은 시계방향으로. 반시계로하면 뒷면으로 판단되서 back culling에 의해 그려지지가 않는다.
 	vertices[0].position = XMFLOAT3(-1.0f, -1.0f, 0.0f); // Bottom left.
-	vertices[0].color = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+	vertices[0].texture = XMFLOAT2(0.0f, 1.0f);
 
 	vertices[1].position = XMFLOAT3(0.0f, 1.0f, 0.0f); // Top Middle
-	vertices[1].color = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+	vertices[1].texture = XMFLOAT2(0.5f, 0.0f);
 
 	vertices[2].position = XMFLOAT3(1.0f, -1.0f, 0.0f); // Bottom Right.
-	vertices[2].color = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+	vertices[2].texture = XMFLOAT2(1.0f, 1.0f);
 
 	// 인덱스 배열의 값을 설정합니다.
 	indices[0] = 0;
@@ -159,4 +172,28 @@ void ModelClass::RenderBuffers(ID3D11DeviceContext* deviceContext)
 
 	// 정점 버퍼로 그릴 기본형을 설정합니다. 여기서는 삼각형으로 설정합니다.
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
+
+bool ModelClass::LoadTexture(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const char* filename)
+{
+	// 텍스쳐 오브젝트를 생성한다.
+	m_Texture = new TextureClass;
+	if (!m_Texture)
+		return false;
+
+	// 텍스처 오브젝트를 초기화한다
+	return m_Texture->Initialize(device, deviceContext, filename);
+}
+
+
+void ModelClass::ReleaseTexture()
+{
+	// 텍스처 오브젝트를 릴리즈한다.
+	if (m_Texture)
+	{
+		m_Texture->Shutdown();
+		delete m_Texture;
+		m_Texture = nullptr;
+	}
 }

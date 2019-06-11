@@ -1,43 +1,43 @@
 #include "stdafx.h"
-#include "ColorShaderClass.h"
+#include "TextureShaderClass.h"
 #include <string>
 
-ColorShaderClass::ColorShaderClass()
+TextureShaderClass::TextureShaderClass()
 {
 	m_vertexShader = nullptr;
 	m_pixelShader = nullptr;
-	m_layout = 0;
-	m_matrixBuffer = 0;
+	m_layout = nullptr;
+	m_matrixBuffer = nullptr;
 }
 
 
-ColorShaderClass::ColorShaderClass(const ColorShaderClass& other)
+TextureShaderClass::TextureShaderClass(const TextureShaderClass& other)
 {
 }
 
 
-ColorShaderClass::~ColorShaderClass()
+TextureShaderClass::~TextureShaderClass()
 {
 }
 
 
-bool ColorShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
+bool TextureShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
 {
 	// 정점 및 픽셀 쉐이더를 초기화합니다.
-	return InitializeShader(device, hwnd, L"../DirectX11_Study/Color.vs", L"../DirectX11_Study/Color.ps");
+	return InitializeShader(device, hwnd, L"../DirectX11_Study/Texture.vs", L"../DirectX11_Study/Texture.ps");
 }
 
 
-void ColorShaderClass::Shutdown()
+void TextureShaderClass::Shutdown()
 {
 	ShutdownShader();
 }
 
 
-bool ColorShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix)
+bool TextureShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture)
 {
 	// 렌더링에 사용할 쉐이더 매개 변수를 설정합니다.
-	if (!SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix))
+	if (!SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, texture))
 		return false;
 	
 	// 설정된 버퍼를 셰이더로 렌더링합니다.
@@ -46,13 +46,13 @@ bool ColorShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount
 	return true;
 }
 
-bool ColorShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename)
+bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename)
 {
 	ID3D10Blob* errorMessage = nullptr;
 
 	// 버텍스 쉐이더 코드를 컴파일한다.
 	ID3D10Blob* vertexShaderBuffer = nullptr;
-	if (FAILED(D3DCompileFromFile(vsFilename, NULL, NULL, "ColorVertexShader", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vertexShaderBuffer, &errorMessage)))
+	if (FAILED(D3DCompileFromFile(vsFilename, NULL, NULL, "TextureVertexShader", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vertexShaderBuffer, &errorMessage)))
 	{
 		// 쉐이더 컴파일 실패시 오류메시지를 출력합니다.
 		if (errorMessage)
@@ -65,7 +65,7 @@ bool ColorShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const W
 
 	// 픽셀 쉐이더 코드를 컴파일합니다.
 	ID3D10Blob* pixelShaderBuffer = nullptr;
-	if (FAILED(D3DCompileFromFile(psFilename, NULL, NULL, "ColorPixelShader", "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pixelShaderBuffer, &errorMessage)))
+	if (FAILED(D3DCompileFromFile(psFilename, NULL, NULL, "TexturePixelShader", "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pixelShaderBuffer, &errorMessage)))
 	{
 		// 쉐이더 컴파일 실패시 오류메시지를 출력합니다.
 		if (errorMessage)
@@ -94,9 +94,9 @@ bool ColorShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const W
 	polygonLayout[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	polygonLayout[0].InstanceDataStepRate = 0;
 
-	polygonLayout[1].SemanticName = "COLOR";
+	polygonLayout[1].SemanticName = "TEXCOORD";
 	polygonLayout[1].SemanticIndex = 0;
-	polygonLayout[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	polygonLayout[1].Format = DXGI_FORMAT_R32G32_FLOAT;
 	polygonLayout[1].InputSlot = 0;
 	polygonLayout[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 	polygonLayout[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
@@ -127,21 +127,43 @@ bool ColorShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const W
 	// 상수 버퍼 포인터를 만들어 이 클래스에서 정점 쉐이더 상수 버퍼에 접근할 수 있게 합니다.
 	if (FAILED(device->CreateBuffer(&matrixBufferDesc, NULL, &m_matrixBuffer)))
 		return false;
+
+	// 텍스쳐 샘플러 상태 구조체를 생성 및 설정합니다.
+	D3D11_SAMPLER_DESC samplerDesc;
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.MipLODBias = 0.0f;
+	samplerDesc.MaxAnisotropy = 1;
+	samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	samplerDesc.BorderColor[0] = 0;
+	samplerDesc.BorderColor[1] = 0;
+	samplerDesc.BorderColor[2] = 0;
+	samplerDesc.BorderColor[3] = 0;
+	samplerDesc.MinLOD = 0;
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+	// 텍스처 샘플러 상태를 만듭니다.
+	if (FAILED(device->CreateSamplerState(&samplerDesc, &m_sampleState)))
+		return false;
+
 	return true;
 }
 
 
-#define SAFE_RELEASE(x) if(x) x->Release(); x = 0
-void ColorShaderClass::ShutdownShader()
+#define SAFE_RELEASE(x) if(x != nullptr) x->Release(); x = nullptr;
+void TextureShaderClass::ShutdownShader()
 {
-	// 행렬 상수 버퍼를 해제합니다.
-	SAFE_RELEASE(m_matrixBuffer);
-	SAFE_RELEASE(m_layout);
-	SAFE_RELEASE(m_pixelShader);
-	SAFE_RELEASE(m_vertexShader);
+
+	SAFE_RELEASE(m_sampleState);			// 샘플러 상태를 해제합니다.
+	SAFE_RELEASE(m_matrixBuffer);			// 행렬 상수 버퍼를 해제합니다.
+	SAFE_RELEASE(m_layout);					// 레이아웃을 해제합니다.
+	SAFE_RELEASE(m_pixelShader);			// 픽셀 쉐이더를 해제합니다.
+	SAFE_RELEASE(m_vertexShader);			// 버텍스 쉐이더를 해제합니다.
 }
 
-void ColorShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, const WCHAR* shaderFilename)
+void TextureShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, const WCHAR* shaderFilename)
 {
 	// 에러 메시지를 출력창에 표시합니다.
 	OutputDebugStringA(reinterpret_cast<const char*>(errorMessage->GetBufferPointer()));
@@ -154,7 +176,7 @@ void ColorShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND h
 }
 
 
-bool ColorShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix)
+bool TextureShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture)
 {
 	// 행렬을 transpose하여 쉐이더에서 사용할 수 있게 합니다.
 	// 왜 전치행렬로 바꾸는지 검색해봤는데, DirectX는 행 위주 행렬을 사용하고 HLSL는 열 위주 행렬을 사용하기 때문.
@@ -187,11 +209,14 @@ bool ColorShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, X
 	// 마지막으로 정점 쉐이더의 상수 버퍼를 바뀐 값으로 바꿉니다.
 	deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_matrixBuffer);
 
+	// 픽셀 쉐이더에서 쉐이더 텍스처 리소스를 설정합니다.
+	deviceContext->PSSetShaderResources(0, 1, &texture);
+
 	return true;
 }
 
 
-void ColorShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
+void TextureShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
 {
 	// 정점 입력 레이아웃을 설정합니다.
 	deviceContext->IASetInputLayout(m_layout);
@@ -199,6 +224,9 @@ void ColorShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int inde
 	// 삼각형을 그릴 정점 쉐이더와 픽셀 쉐이더를 설정합니다.
 	deviceContext->VSSetShader(m_vertexShader, NULL, 0);
 	deviceContext->PSSetShader(m_pixelShader, NULL, 0);
+
+	// 픽셀 쉐이더에서 샘플러 상태를 설정합니다.
+	deviceContext->PSSetSamplers(0, 1, &m_sampleState);
 
 	// 삼각형을 그립니다.
 	deviceContext->DrawIndexed(indexCount, 0, 0);

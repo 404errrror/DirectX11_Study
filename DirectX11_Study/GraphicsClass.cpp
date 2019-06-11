@@ -3,7 +3,7 @@
 #include "GraphicsClass.h"
 #include "CameraClass.h"	
 #include "ModelClass.h"	
-#include "ColorShaderClass.h"
+#include "TextureShaderClass.h"
 
 
 GraphicsClass::GraphicsClass()
@@ -11,7 +11,7 @@ GraphicsClass::GraphicsClass()
 	m_Direct3D = nullptr;
 	m_Camera = nullptr;
 	m_Model = nullptr;
-	m_ColorShader = nullptr;
+	m_TextureShader = nullptr;
 }
 
 
@@ -52,17 +52,17 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 		return false;
 
 	// m_Model 객체 초기화
-	if (!m_Model->Initialize(m_Direct3D->GetDevice()))
+	if (!m_Model->Initialize(m_Direct3D->GetDevice(), m_Direct3D->GetDeviceContext(), "../DirectX11_Study/CheckBox.tga"))
 	{
 		MessageBox(hwnd, L"Could not initialize the model object.", L"Error", MB_OK);
 		return false;
 	}
 
-	m_ColorShader = new ColorShaderClass;
-	if (!m_ColorShader)
+	m_TextureShader = new TextureShaderClass;
+	if (!m_TextureShader)
 		return false;
-	// m_ColorShader 객체 초기화
-	if (!m_ColorShader->Initialize(m_Direct3D->GetDevice(), hwnd))
+	// m_TextureShader 객체 초기화
+	if (!m_TextureShader->Initialize(m_Direct3D->GetDevice(), hwnd))
 	{
 		MessageBox(hwnd, L"Could not initialize the color shader object", L"Error", MB_OK);
 		return false;
@@ -73,12 +73,12 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 
 void GraphicsClass::ShutDown()
 {
-	// m_ColorShader 객체 반환
-	if (m_ColorShader != nullptr)
+	// m_TextureShader 객체 반환
+	if (m_TextureShader != nullptr)
 	{
-		m_ColorShader->Shutdown();
-		delete m_ColorShader;
-		m_ColorShader = nullptr;
+		m_TextureShader->Shutdown();
+		delete m_TextureShader;
+		m_TextureShader = nullptr;
 	}
 
 	// m_Model 객체 반환
@@ -130,7 +130,11 @@ bool GraphicsClass::Render()
 	m_Model->Render(m_Direct3D->GetDeviceContext());
 
 	// 색상 쉐이더를 사용하여 모델을 렌더링합니다.
-	if (!m_ColorShader->Render(m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMAtrix, viewMatrix, projectionMatrix))
+	if (!m_TextureShader->Render(
+									m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), 
+									worldMAtrix, viewMatrix, projectionMatrix, 
+									m_Model->GetTexture()
+		))
 		return false;
 
 	// 버퍼의 내용을 화면에 출력합니다.

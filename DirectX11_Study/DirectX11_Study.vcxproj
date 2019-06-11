@@ -148,7 +148,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CameraClass.h" />
-    <ClInclude Include="ColorShaderClass.h" />
+    <ClInclude Include="TextureClass.h" />
+    <ClInclude Include="TextureShaderClass.h" />
     <ClInclude Include="D3DClass.h" />
     <ClInclude Include="ModelClass.h" />
     <ClInclude Include="WinMain.h" />
@@ -162,7 +163,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CameraClass.cpp" />
-    <ClCompile Include="ColorShaderClass.cpp" />
+    <ClCompile Include="TextureClass.cpp" />
+    <ClCompile Include="TextureShaderClass.cpp" />
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="ModelClass.cpp" />
     <ClCompile Include="WinMain.cpp" />
@@ -185,8 +187,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="AlignedAllocationPolicy.h" />
-    <None Include="Color.ps" />
-    <None Include="Color.vs" />
+    <None Include="Texture.ps" />
+    <None Include="Texture.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
