@@ -1,43 +1,39 @@
 #include "stdafx.h"
-#include "TextureShaderClass.h"
+#include "LightShaderClass.h"
 #include <string>
 
-TextureShaderClass::TextureShaderClass()
-{
-	m_vertexShader = nullptr;
-	m_pixelShader = nullptr;
-	m_layout = nullptr;
-	m_matrixBuffer = nullptr;
-}
-
-
-TextureShaderClass::TextureShaderClass(const TextureShaderClass& other)
+LightShaderClass::LightShaderClass()
 {
 }
 
 
-TextureShaderClass::~TextureShaderClass()
+LightShaderClass::LightShaderClass(const LightShaderClass& other)
 {
 }
 
 
-bool TextureShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
+LightShaderClass::~LightShaderClass()
+{
+}
+
+
+bool LightShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
 {
 	// 정점 및 픽셀 쉐이더를 초기화합니다.
-	return InitializeShader(device, hwnd, L"../DirectX11_Study/Texture.vs", L"../DirectX11_Study/Texture.ps");
+	return InitializeShader(device, hwnd, L"../DirectX11_Study/Light.vs", L"../DirectX11_Study/Light.ps");
 }
 
 
-void TextureShaderClass::Shutdown()
+void LightShaderClass::Shutdown()
 {
 	ShutdownShader();
 }
 
 
-bool TextureShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture)
+bool LightShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture, XMFLOAT3 lightDirection, XMFLOAT4 diffuseColor)
 {
 	// 렌더링에 사용할 쉐이더 매개 변수를 설정합니다.
-	if (!SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, texture))
+	if (!SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, texture, lightDirection, diffuseColor))
 		return false;
 	
 	// 설정된 버퍼를 셰이더로 렌더링합니다.
@@ -46,13 +42,13 @@ bool TextureShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCou
 	return true;
 }
 
-bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename)
+bool LightShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename)
 {
 	ID3D10Blob* errorMessage = nullptr;
 
 	// 버텍스 쉐이더 코드를 컴파일한다.
 	ID3D10Blob* vertexShaderBuffer = nullptr;
-	if (FAILED(D3DCompileFromFile(vsFilename, NULL, NULL, "TextureVertexShader", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vertexShaderBuffer, &errorMessage)))
+	if (FAILED(D3DCompileFromFile(vsFilename, NULL, NULL, "LightVertexShader", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vertexShaderBuffer, &errorMessage)))
 	{
 		// 쉐이더 컴파일 실패시 오류메시지를 출력합니다.
 		if (errorMessage)
@@ -65,7 +61,7 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const
 
 	// 픽셀 쉐이더 코드를 컴파일합니다.
 	ID3D10Blob* pixelShaderBuffer = nullptr;
-	if (FAILED(D3DCompileFromFile(psFilename, NULL, NULL, "TexturePixelShader", "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pixelShaderBuffer, &errorMessage)))
+	if (FAILED(D3DCompileFromFile(psFilename, NULL, NULL, "LightPixelShader", "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pixelShaderBuffer, &errorMessage)))
 	{
 		// 쉐이더 컴파일 실패시 오류메시지를 출력합니다.
 		if (errorMessage)
@@ -85,7 +81,7 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const
 
 	// 정점 입력 레이아웃 구조체를 설정합니다.
 	// 이 설정은 ModelClass와 쉐이더 VertexType 구조와 일치해야합니다.
-	D3D11_INPUT_ELEMENT_DESC polygonLayout[2];
+	D3D11_INPUT_ELEMENT_DESC polygonLayout[3];
 	polygonLayout[0].SemanticName = "POSITION";
 	polygonLayout[0].SemanticIndex = 0;
 	polygonLayout[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
@@ -102,6 +98,14 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const
 	polygonLayout[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	polygonLayout[1].InstanceDataStepRate = 0;
 
+	polygonLayout[2].SemanticName = "NORMAL";
+	polygonLayout[2].SemanticIndex = 0;
+	polygonLayout[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	polygonLayout[2].InputSlot = 0;
+	polygonLayout[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+	polygonLayout[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	polygonLayout[2].InstanceDataStepRate = 0;
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 레이아웃의 요소 수를 가져옵니다.
 	unsigned int numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);
 
@@ -153,7 +157,7 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const
 
 
 #define SAFE_RELEASE(x) if(x != nullptr) x->Release(); x = nullptr;
-void TextureShaderClass::ShutdownShader()
+void LightShaderClass::ShutdownShader()
 {
 
 	SAFE_RELEASE(m_sampleState);			// 샘플러 상태를 해제합니다.
@@ -163,7 +167,7 @@ void TextureShaderClass::ShutdownShader()
 	SAFE_RELEASE(m_vertexShader);			// 버텍스 쉐이더를 해제합니다.
 }
 
-void TextureShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, const WCHAR* shaderFilename)
+void LightShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, const WCHAR* shaderFilename)
 {
 	// 에러 메시지를 출력창에 표시합니다.
 	OutputDebugStringA(reinterpret_cast<const char*>(errorMessage->GetBufferPointer()));
@@ -176,7 +180,7 @@ void TextureShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 }
 
 
-bool TextureShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture)
+bool LightShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture, XMFLOAT3 lightDirection,  XMFLOAT4 diffuseColor)
 {
 	// 행렬을 transpose하여 쉐이더에서 사용할 수 있게 합니다.
 	// 왜 전치행렬로 바꾸는지 검색해봤는데, DirectX는 행 위주 행렬을 사용하고 HLSL는 열 위주 행렬을 사용하기 때문.
@@ -216,7 +220,7 @@ bool TextureShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 }
 
 
-void TextureShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
+void LightShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
 {
 	// 정점 입력 레이아웃을 설정합니다.
 	deviceContext->IASetInputLayout(m_layout);

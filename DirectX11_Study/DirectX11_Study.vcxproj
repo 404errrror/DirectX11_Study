@@ -23,7 +23,7 @@
     <ProjectGuid>{8462BAAC-E7EA-4710-997F-AFF97BA25486}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>DirectX11Study</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -148,8 +148,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CameraClass.h" />
+    <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="TextureClass.h" />
-    <ClInclude Include="TextureShaderClass.h" />
+    <ClInclude Include="LightShaderClass.h" />
     <ClInclude Include="D3DClass.h" />
     <ClInclude Include="ModelClass.h" />
     <ClInclude Include="WinMain.h" />
@@ -163,8 +164,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CameraClass.cpp" />
+    <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="TextureClass.cpp" />
-    <ClCompile Include="TextureShaderClass.cpp" />
+    <ClCompile Include="LightShaderClass.cpp" />
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="ModelClass.cpp" />
     <ClCompile Include="WinMain.cpp" />
@@ -187,8 +189,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="AlignedAllocationPolicy.h" />
-    <None Include="Texture.ps" />
-    <None Include="Texture.vs" />
+    <None Include="Light.ps" />
+    <None Include="Light.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

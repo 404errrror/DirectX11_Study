@@ -51,10 +51,13 @@
     <ClInclude Include="CameraClass.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="TextureShaderClass.h">
+    <ClInclude Include="TextureClass.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="TextureClass.h">
+    <ClInclude Include="LightShaderClass.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DDSTextureLoader.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -83,10 +86,13 @@
     <ClCompile Include="CameraClass.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="TextureShaderClass.cpp">
+    <ClCompile Include="TextureClass.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="TextureClass.cpp">
+    <ClCompile Include="LightShaderClass.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DDSTextureLoader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -107,10 +113,10 @@
     <None Include="AlignedAllocationPolicy.h">
       <Filter>헤더 파일</Filter>
     </None>
-    <None Include="Texture.vs">
+    <None Include="Light.ps">
       <Filter>Shader</Filter>
     </None>
-    <None Include="Texture.ps">
+    <None Include="Light.vs">
       <Filter>Shader</Filter>
     </None>
   </ItemGroup>

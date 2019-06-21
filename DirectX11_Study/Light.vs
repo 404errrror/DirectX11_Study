@@ -19,18 +19,20 @@ struct VertexInputType
 {
     float4 position : POSITION;
     float2 tex : TEXCOORD0;
+	float3 normal : NORMAL;
 };
 
 struct PixelInputType
 {
 	float4 position : SV_POSITION;
     float2 tex : TEXCOORD0;
+	float3 normal : NORMAL;
 };
 
 //////////////////////////////////
 // Vertex Shader
 ///////////////////////////////////
-PixelInputType TextureVertexShader(VertexInputType input)
+PixelInputType LightVertexShader(VertexInputType input)
 {
 	PixelInputType output;
 
@@ -44,6 +46,12 @@ PixelInputType TextureVertexShader(VertexInputType input)
 
 	// 픽셀 쉐이더의 텍스쳐 좌표를 저장한다.
 	output.tex = input.tex;
+
+	// 월드 행렬에 대해서만 법선 벡터를 계산합니다.
+	output.normal = mul(input.normal, (float3x3)worldMatrix);
+
+	// 법선 벡터를 정규화합니다.
+	output.normal = normalize(output.normal);
 
 	return output;
 }
