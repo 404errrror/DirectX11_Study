@@ -80,12 +80,15 @@ bool ModelClass::InitializeBuffers(ID3D11Device* device)
 	// 정점은 시계방향으로. 반시계로하면 뒷면으로 판단되서 back culling에 의해 그려지지가 않는다.
 	vertices[0].position = XMFLOAT3(-1.0f, -1.0f, 0.0f); // Bottom left.
 	vertices[0].texture = XMFLOAT2(0.0f, 1.0f);
+	vertices[0].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
 
 	vertices[1].position = XMFLOAT3(0.0f, 1.0f, 0.0f); // Top Middle
 	vertices[1].texture = XMFLOAT2(0.5f, 0.0f);
+	vertices[1].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
 
 	vertices[2].position = XMFLOAT3(1.0f, -1.0f, 0.0f); // Bottom Right.
 	vertices[2].texture = XMFLOAT2(1.0f, 1.0f);
+	vertices[2].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
 
 	// 인덱스 배열의 값을 설정합니다.
 	indices[0] = 0;

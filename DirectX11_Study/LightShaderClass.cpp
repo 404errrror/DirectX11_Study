@@ -105,7 +105,7 @@ bool LightShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const W
 	polygonLayout[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 	polygonLayout[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	polygonLayout[2].InstanceDataStepRate = 0;
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	// 레이아웃의 요소 수를 가져옵니다.
 	unsigned int numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);
 
@@ -152,6 +152,20 @@ bool LightShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const W
 	if (FAILED(device->CreateSamplerState(&samplerDesc, &m_sampleState)))
 		return false;
 
+	// 픽셀 쉐이더에 있는 광원 동적 상수 버퍼의 설명을 설정합니다.
+	// D3D11_BIND_CONSTANT_BUFFER를 사용하면 ByteWidth가 항상 16의 배수이여야하며 그렇지 않으면 CreateBuffer가 실패합니다.
+	D3D11_BUFFER_DESC lightBufferDesc;
+	lightBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	lightBufferDesc.ByteWidth = sizeof(LightBufferType);
+	lightBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	lightBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	lightBufferDesc.MiscFlags = 0;
+	lightBufferDesc.StructureByteStride = 0;
+
+	// 이 클래스 내에서 정점 셰이더 상수 버퍼에 액세스 할 수 있도록 상수 버퍼 포인터를 만듭니다.
+	if (FAILED(device->CreateBuffer(&lightBufferDesc, NULL, &m_lightBuffer)))
+		return false;
+
 	return true;
 }
 
@@ -159,7 +173,7 @@ bool LightShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const W
 #define SAFE_RELEASE(x) if(x != nullptr) x->Release(); x = nullptr;
 void LightShaderClass::ShutdownShader()
 {
-
+	SAFE_RELEASE(m_lightBuffer);			// 광원 상수 버퍼를 해제합니다.
 	SAFE_RELEASE(m_sampleState);			// 샘플러 상태를 해제합니다.
 	SAFE_RELEASE(m_matrixBuffer);			// 행렬 상수 버퍼를 해제합니다.
 	SAFE_RELEASE(m_layout);					// 레이아웃을 해제합니다.
@@ -216,6 +230,25 @@ bool LightShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, X
 	// 픽셀 쉐이더에서 쉐이더 텍스처 리소스를 설정합니다.
 	deviceContext->PSSetShaderResources(0, 1, &texture);
 
+	if (FAILED(deviceContext->Map(m_lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+		return false;
+
+	// 상수 버퍼의 데이터에 대한 포인터를 가져옵니다.
+	LightBufferType* dataPtr2 = (LightBufferType*)mappedResource.pData;
+
+	// 조명 변수를 상수 버퍼에 복사합니다.
+	dataPtr2->diffuseColor = diffuseColor;
+	dataPtr2->lightDirection = lightDirection;
+	dataPtr2->padding = 0.0f;
+
+	// 상수 버퍼의 잠금을 해제합니다.
+	deviceContext->Unmap(m_lightBuffer, 0);
+	
+	// 픽셀 쉐이더에서 광원 상수 버퍼의 위치를 설정합니다.
+	bufferNumber = 0;
+
+	// 마지막으로 업데이트 된 값으로 픽셀 쉐이더에서 광원 상수 버퍼를 설정합니다.
+	deviceContext->PSSetConstantBuffers(bufferNumber, 1, &m_lightBuffer);
 	return true;
 }
 

@@ -3,7 +3,8 @@
 #include "GraphicsClass.h"
 #include "CameraClass.h"	
 #include "ModelClass.h"	
-#include "TextureShaderClass.h"
+#include "LightClass.h"
+#include "LightShaderClass.h"
 
 
 GraphicsClass::GraphicsClass()
@@ -11,7 +12,8 @@ GraphicsClass::GraphicsClass()
 	m_Direct3D = nullptr;
 	m_Camera = nullptr;
 	m_Model = nullptr;
-	m_TextureShader = nullptr;
+	m_LightShader = nullptr;
+	m_Light = nullptr;
 }
 
 
@@ -58,27 +60,40 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 		return false;
 	}
 
-	m_TextureShader = new TextureShaderClass;
-	if (!m_TextureShader)
+	m_LightShader = new LightShaderClass;
+	if (!m_LightShader)
 		return false;
-	// m_TextureShader 객체 초기화
-	if (!m_TextureShader->Initialize(m_Direct3D->GetDevice(), hwnd))
+	// m_LightShader 객체 초기화
+	if (!m_LightShader->Initialize(m_Direct3D->GetDevice(), hwnd))
 	{
 		MessageBox(hwnd, L"Could not initialize the color shader object", L"Error", MB_OK);
 		return false;
 	}
+
+	// m_Light 객체 생성
+	m_Light = new LightClass;
+
+	// m_Light 객체 초기화
+	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
+	m_Light->SetDirection(0.0f, 0.0f, 1.0f);
 	return true;
 }
 
 
 void GraphicsClass::ShutDown()
 {
-	// m_TextureShader 객체 반환
-	if (m_TextureShader != nullptr)
+	if (m_Light != nullptr)
 	{
-		m_TextureShader->Shutdown();
-		delete m_TextureShader;
-		m_TextureShader = nullptr;
+		delete m_Light;
+		m_Light = nullptr;
+	}
+
+	// m_LightShader 객체 반환
+	if (m_LightShader != nullptr)
+	{
+		m_LightShader->Shutdown();
+		delete m_LightShader;
+		m_LightShader = nullptr;
 	}
 
 	// m_Model 객체 반환
@@ -108,11 +123,19 @@ void GraphicsClass::ShutDown()
 
 bool GraphicsClass::Frame()
 {
-	return Render();
+	static float rotation = 0.0f;
+
+	// 각 프레임의 rotation 변수를 업데이트 합니다.
+	rotation += (float_t)XM_PI * 0.003f;
+	if (rotation > 360.0f)
+		rotation -= 360.0f;
+
+	// 그래픽 랜더링 처리
+	return Render(rotation);
 }
 
 
-bool GraphicsClass::Render()
+bool GraphicsClass::Render(float rotation)
 {
 	// 씬을 그리기 위해 버퍼를 지웁니다.
 	m_Direct3D->BeginScene(0.5f, 0.5f, 0.5f, 1.0f);
@@ -121,19 +144,23 @@ bool GraphicsClass::Render()
 	m_Camera->Render();
 
 	// 카메라 및 d3d 객체에서 월드, 뷰 및 투영 행렬을 가져옵니다.
-	XMMATRIX worldMAtrix, viewMatrix, projectionMatrix;
-	m_Direct3D->GetWorldMatrix(worldMAtrix);
+	XMMATRIX worldMatrix, viewMatrix, projectionMatrix;
+	m_Direct3D->GetWorldMatrix(worldMatrix);
 	m_Camera->GetViewMatrix(viewMatrix);
 	m_Direct3D->GetProjectionMatrix(projectionMatrix);
+
+	// 삼각형이 회전 할 수 있도록 회전 값으로 월드 행렬을 회전합니다.
+	worldMatrix = XMMatrixRotationY(rotation);
 
 	// 모델 버텍스와 인덱스 버퍼를 그래픽 파이프 라인에 배치하여 드로잉을 준비합니다.
 	m_Model->Render(m_Direct3D->GetDeviceContext());
 
 	// 색상 쉐이더를 사용하여 모델을 렌더링합니다.
-	if (!m_TextureShader->Render(
+	if (!m_LightShader->Render(
 									m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), 
-									worldMAtrix, viewMatrix, projectionMatrix, 
-									m_Model->GetTexture()
+									worldMatrix, viewMatrix, projectionMatrix, 
+									m_Model->GetTexture(),
+									m_Light->GetDirection(), m_Light->GetDiffuseColor()
 		))
 		return false;
 
