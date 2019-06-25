@@ -2,6 +2,7 @@
 #include "ModelClass.h"
 #include "TextureClass.h"
 
+#include <fstream>
 ModelClass::ModelClass()
 {
 }
@@ -18,8 +19,12 @@ ModelClass::~ModelClass()
 
 
 
-bool ModelClass::Initialize(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const char* textureFilename)
+bool ModelClass::Initialize(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const char* modelFilename, const char* textureFilename)
 {
+	// 모델 데이터를 로드합니다
+	if (!LoadModel(modelFilename))
+		return false;
+
 	// 정점 및 인덱스 버퍼를 초기화합니다.
 	if (!InitializeBuffers(device))
 		return false;
@@ -31,11 +36,14 @@ bool ModelClass::Initialize(ID3D11Device* device, ID3D11DeviceContext* deviceCon
 
 void ModelClass::Shutdown()
 {
-	// 버텍스 및 인덱스 버퍼를 종료합니다.
-	ShutdownBuffers();
+	// 모델 텍스쳐를 반환합니다.
+	ReleaseTexture();
 
 	// 버텍스 및 인덱스 버퍼를 종료합니다.
 	ShutdownBuffers();
+
+	// 모델 데이터 반환
+	ReleaseModel();
 }
 
 
@@ -60,11 +68,6 @@ ID3D11ShaderResourceView* ModelClass::GetTexture()
 
 bool ModelClass::InitializeBuffers(ID3D11Device* device)
 {
-	// 정점 배열의 정점 수를 설정합니다.
-	m_vertexCount = 3;
-	
-	// 인덱스 배열의 인덱스 수를 설정합니다.
-	m_indexCount = 3;
 
 	// 정점배열을 만듭니다.
 	VertexType* vertices = new VertexType[m_vertexCount];
@@ -77,23 +80,14 @@ bool ModelClass::InitializeBuffers(ID3D11Device* device)
 		return false;
 
 	// 정점 배열에 데이터를 설정합니다.
-	// 정점은 시계방향으로. 반시계로하면 뒷면으로 판단되서 back culling에 의해 그려지지가 않는다.
-	vertices[0].position = XMFLOAT3(-1.0f, -1.0f, 0.0f); // Bottom left.
-	vertices[0].texture = XMFLOAT2(0.0f, 1.0f);
-	vertices[0].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
+	for (int i = 0; i < m_vertexCount; ++i)
+	{
+		vertices[i].position = XMFLOAT3(m_model[i].x, m_model[i].y, m_model[i].z);
+		vertices[i].texture = XMFLOAT2(m_model[i].tu, m_model[i].tv);
+		vertices[i].normal = XMFLOAT3(m_model[i].nx, m_model[i].ny, m_model[i].nz);
 
-	vertices[1].position = XMFLOAT3(0.0f, 1.0f, 0.0f); // Top Middle
-	vertices[1].texture = XMFLOAT2(0.5f, 0.0f);
-	vertices[1].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
-
-	vertices[2].position = XMFLOAT3(1.0f, -1.0f, 0.0f); // Bottom Right.
-	vertices[2].texture = XMFLOAT2(1.0f, 1.0f);
-	vertices[2].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
-
-	// 인덱스 배열의 값을 설정합니다.
-	indices[0] = 0;
-	indices[1] = 1;
-	indices[2] = 2;
+		indices[i] = i;
+	}
 
 	// 정적 정점 버퍼의 구조체를 설정합니다.
 	D3D11_BUFFER_DESC vertexBufferDesc;
@@ -198,5 +192,64 @@ void ModelClass::ReleaseTexture()
 		m_Texture->Shutdown();
 		delete m_Texture;
 		m_Texture = nullptr;
+	}
+}
+
+
+bool ModelClass::LoadModel(const char* filename)
+{
+	// 모델 파일을 엽니다.
+	std::ifstream fin;
+	fin.open(filename);
+
+	// 파일을 열 수 없으면 종료합니다.
+	if (fin.fail())
+		return false;
+
+	// 버텍스 카운트 값 전까지 읽습니다.
+	char input = 0;
+	fin.get(input);
+	while (input != ':')
+		fin.get(input);
+
+	// 버텍스 카운트를 읽습니다.
+	fin >> m_vertexCount;
+
+	// 인덱스의 수를 정점 수와 같게 설정합니다.
+	m_indexCount = m_vertexCount;
+
+	// 읽어들인 정점 수를 이용하여 모델을 만듭니다.
+	m_model = new ModelType[m_vertexCount];
+	if (!m_model)
+		return false;
+
+	// 데이터의 시작 부분까지 읽는다.
+	fin.get(input);
+	while (input != ':')
+		fin.get(input);
+	fin.get(input);
+	fin.get(input);
+
+	// 버텍스 데이터를 읽습니다.
+	for (int i = 0; i < m_vertexCount; ++i)
+	{
+		fin >> m_model[i].x >> m_model[i].y >> m_model[i].z;
+		fin >> m_model[i].tu >> m_model[i].tv;
+		fin >> m_model[i].nx >> m_model[i].ny >> m_model[i].nz;
+	}
+
+	// 모델을 닫는다.
+	fin.close();
+
+	return true;
+}
+
+
+void ModelClass::ReleaseModel()
+{
+	if (m_model != nullptr)
+	{
+		delete[] m_model;
+		m_model = nullptr;
 	}
 }
