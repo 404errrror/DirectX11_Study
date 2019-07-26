@@ -2,29 +2,22 @@
 
 class TextureClass;
 
-class ModelClass : public AlignedAllocationPolicy<16>
+class BitmapClass : public AlignedAllocationPolicy<16>
 {
 private:
 	struct VertexType
 	{
 		XMFLOAT3 position;
 		XMFLOAT2 texture;
-		XMFLOAT3 normal;
-	};
-	struct ModelType
-	{
-		float x, y, z;
-		float tu, tv;
-		float nx, ny, nz;
 	};
 public:
-	ModelClass();
-	ModelClass(const ModelClass&);
-	~ModelClass();
+	BitmapClass();
+	BitmapClass(const BitmapClass&);
+	~BitmapClass();
 
-	bool Initialize(ID3D11Device*, ID3D11DeviceContext*, const char*, const char*);
+	bool Initialize(ID3D11Device*, ID3D11DeviceContext*, int, int, const char*, int, int);
 	void Shutdown();
-	void Render(ID3D11DeviceContext*);
+	bool Render(ID3D11DeviceContext*, int, int);
 
 	int GetIndexCount();
 	ID3D11ShaderResourceView* GetTexture();
@@ -32,20 +25,22 @@ public:
 private:
 	bool InitializeBuffers(ID3D11Device*);
 	void ShutdownBuffers();
+	bool UpdateBuffers(ID3D11DeviceContext*, int, int);
 	void RenderBuffers(ID3D11DeviceContext*);
 
 	bool LoadTexture(ID3D11Device*, ID3D11DeviceContext*, const char*);
 	void ReleaseTexture();
-
-	bool LoadModel(const char*);
-	void ReleaseModel();
-
 private:
 	ID3D11Buffer* m_vertexBuffer = nullptr;
 	ID3D11Buffer* m_indexBuffer = nullptr;
 	int m_vertexCount = 0;
 	int m_indexCount = 0;
 	TextureClass* m_Texture = nullptr;
-	ModelType* m_model = nullptr;
+	int m_screenWidth = 0;
+	int m_screenHeight = 0;
+	int m_bitmapWidth = 0;
+	int m_bitmapHeight = 0;
+	int m_previousPosX = 0;
+	int m_previousPosY = 0;
 };
 

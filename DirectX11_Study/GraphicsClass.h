@@ -10,9 +10,9 @@ const float SCREEN_NEAR = 0.1f;
 
 class D3DClass;
 class CameraClass;
-class ModelClass;
+class BitmapClass;
 class LightClass;
-class LightShaderClass;
+class TextureShaderClass;
 
 class GraphicsClass
 {
@@ -31,8 +31,8 @@ private:
 private:
 	D3DClass* m_Direct3D = nullptr;
 	CameraClass* m_Camera = nullptr;
-	ModelClass* m_Model = nullptr;
-	LightShaderClass* m_LightShader = nullptr;
+	BitmapClass* m_Bitmap = nullptr;
+	TextureShaderClass* m_textureShader = nullptr;
 	LightClass* m_Light = nullptr;
 };
 
